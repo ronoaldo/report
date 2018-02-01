@@ -1,0 +1,33 @@
+{
+    "Name": "My Company Name",
+    "CNPJ": "11.111.111/0001-11",
+    "BillingAddress": "Mason St, 445, San Francisco California",
+    "Date": "27/01/2018",
+
+    "Order": "9845.7778",
+
+    "Jan": "$ 124,55",
+    "JanRet": "$ 4,55",
+    "Feb": "-",
+    "FebRet": "-",
+    "Mar": "-",
+    "MarRet": "-",
+    "Abr": "-",
+    "AbrRet": "-",
+    "Mai": "-",
+    "MaiRet": "-",
+    "Jun": "-",
+    "Jun_Ret": ",",
+    "Jul": "-",
+    "Jul_Ret": ",",
+    "Ago": "-",
+    "AgoRet": "-",
+    "Set": "-",
+    "SetRet": "-",
+    "Out": "-",
+    "OutRet": "-",
+    "Nov": "-",
+    "NovRet": "-",
+    "Dez": "-",
+    "DezRet": "-"
+}
