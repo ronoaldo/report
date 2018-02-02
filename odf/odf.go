@@ -21,19 +21,22 @@ type OpenDocument struct {
 	cache   map[string]*bytes.Buffer
 }
 
-// Open loads the file contents in-memory
+// Open opens, reads and unpacks the document located at filename in memory.
 func Open(filename string) (*OpenDocument, error) {
 	r, err := zip.OpenReader(filename)
 	if err != nil {
 		return nil, err
 	}
 	defer r.Close()
+	return OpenReader(r)
+}
 
+// OpenReader reads and unpacks the provided document from the provided zip reader in memory.
+func OpenReader(r *zip.ReadCloser) (*OpenDocument, error) {
 	odf := &OpenDocument{}
 	odf.initCache()
 
 	for _, f := range r.File {
-		logger.Printf("archive=%v; file=%v; dir=%v", filename, f.Name, f.FileInfo().IsDir())
 		if f.FileInfo().IsDir() {
 			continue
 		}
