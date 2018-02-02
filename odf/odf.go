@@ -160,11 +160,13 @@ func prepareXMLForTemplate(rawXML string) (string, error) {
 			for i := range spans {
 				s := spans[i]
 				if s.Tag != "span" {
+					prev = nil
 					continue
 				}
 				if s.Tag == "s" {
 					logger.Printf("Removed <text:s/>")
 					p.RemoveChild(s)
+					prev = nil
 					continue
 				}
 				// Let's clean up some dup styles that libreoffice goes on crazy building.
