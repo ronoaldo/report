@@ -2,7 +2,9 @@
 
 Minimalistic Open Document Format (ODF) report generation tool for Go.
 
-## About
+![Screenshot](images/image.png)
+
+# About
 
 This tool aims to be a minimalistic aproach to render ODF files
 using the `text/template` package from stdlib.
@@ -13,6 +15,8 @@ render the resulting document to a file.
 
 The file can later be converted by any format that LibreOffice or
 Unoconv exporting filters allow.
+
+Learn more reading the source [documentation](https://godoc.org/github.com/ronoaldo/report/odf).
 
 # Quick start
 
@@ -36,8 +40,8 @@ Hence, the bare minimum changes to the XML structure is done.
 If you call odf.Execute() and you see an error about invalid characters
 on content.xml or styles.xml, make sure try the following:
 
-*Remove extra formatting using CTRL+M* while selecting the template
+**Remove extra formatting using CTRL+M** while selecting the template
 instructions between `{{ }}`.
 
-*Make sure that, between `{{ }}`, all characters as ASCII*. You may need
+**Make sure that, between `{{ }}`, all characters as ASCII**. You may need
 to disable the convertion of quotes in the local auto-correction preferences.
