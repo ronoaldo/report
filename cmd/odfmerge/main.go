@@ -24,21 +24,21 @@ func main() {
 
 	tpl, err := odf.Open(templateFile)
 	if err != nil {
-		log.Fatal("odfmerge: error opening template %v", err)
+		log.Fatalf("odfmerge: error opening template %v", err)
 	}
 	data, err := loadJSONData(dataFile)
 	if err != nil {
-		log.Fatal("odfmerge: error loading data file: %v", err)
+		log.Fatalf("odfmerge: error loading data file: %v", err)
 	}
 
 	err = tpl.Execute(data)
 	if err != nil {
-		log.Fatal("odfmerge: error merging data with template: %v", err)
+		log.Fatalf("odfmerge: error merging data with template: %v", err)
 	}
 
 	err = tpl.WriteFile(outFile)
 	if err != nil {
-		log.Fatal("odfmerge: error writing output: %v", err)
+		log.Fatalf("odfmerge: error writing output: %v", err)
 	}
 
 	log.Printf("odfmerge: output file written: %v", outFile)
