@@ -1,0 +1,14 @@
+language: go
+
+go_import_path: github.com/ronoaldo/report/odf
+
+before_install:
+- sudo apt-get update -qq
+- sudo apt-get install -qq libreoffice
+
+install:
+- go get -v -t -d github.com/ronoaldo/report/...
+
+go:
+- 1.6
+- 1.8
