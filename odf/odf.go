@@ -43,18 +43,18 @@ func OpenReader(r *zip.ReadCloser) (*OpenDocument, error) {
 		buff := odf.fileBuffer(f.Name)
 		zipfd, err := f.Open()
 		if err != nil {
-			logger.Printf("Error opening file %v from zip: %v", f, err)
+			printf("Error opening file %v from zip: %v", f, err)
 			continue
 		}
 		w, err := io.Copy(buff, zipfd)
 		if err != nil {
-			logger.Printf("Error reading file %v from zip: %v", f, err)
+			printf("Error reading file %v from zip: %v", f, err)
 			continue
 		}
 		if uint64(w) != f.UncompressedSize64 {
-			logger.Printf("Error reading file: not all bytes read, expected %d, got %d", f.UncompressedSize64, w)
+			printf("Error reading file: not all bytes read, expected %d, got %d", f.UncompressedSize64, w)
 		}
-		logger.Printf("Read %d bytes from %v", w, f.Name)
+		printf("Read %d bytes from %v", w, f.Name)
 	}
 	return odf, nil
 }
@@ -72,11 +72,13 @@ func (o *OpenDocument) Execute(values interface{}) error {
 				return err
 			}
 		}
+		xml = formatXML(xml)
+		printf("PARSING: %s -> %v", fname, xml)
 		tpl, err := template.New(fname).Parse(xml)
 		if err != nil {
-			return err
+			return fmt.Errorf("odf: unable to parse template: %v [%v]", err, xml)
 		}
-
+		tpl = tpl.Option("missingkey=zero")
 		buff := &bytes.Buffer{}
 		if err = tpl.Execute(buff, values); err != nil {
 			return err
@@ -86,7 +88,7 @@ func (o *OpenDocument) Execute(values interface{}) error {
 		if err != nil {
 			return err
 		}
-		logger.Printf("Merged %s (%d bytes)", fname, b)
+		printf("Merged %s (%d bytes)", fname, b)
 	}
 	return nil
 }
@@ -110,7 +112,7 @@ func (o *OpenDocument) WriteFile(filename string) error {
 		if err != nil {
 			return err
 		}
-		logger.Printf("Written %d bytes for %s into zip.", b, k)
+		printf("Written %d bytes for %s into zip.", b, k)
 	}
 	if err := w.Flush(); err != nil {
 		return err
@@ -152,6 +154,8 @@ func prepareXMLForTemplate(rawXML string) (string, error) {
 	}
 
 	// Search for paragraphs and fix up invalid elements
+	// TODO: optimize the processing here to allow more robust
+	// templating.
 	toClean := []string{"//text:p", "//annotation"}
 	for _, path := range toClean {
 		for _, p := range doc.FindElements(path) {
@@ -164,7 +168,7 @@ func prepareXMLForTemplate(rawXML string) (string, error) {
 					continue
 				}
 				if s.Tag == "s" {
-					logger.Printf("Removed <text:s/>")
+					printf("Removed <text:s/>")
 					p.RemoveChild(s)
 					prev = nil
 					continue
@@ -176,7 +180,7 @@ func prepareXMLForTemplate(rawXML string) (string, error) {
 				}
 
 				if s.SelectAttr("style-name").Value == prev.SelectAttr("style-name").Value {
-					logger.Printf("Found matching style from previous tag. merge in the contents")
+					printf("Found matching style from previous tag. merge in the contents")
 					prev.SetText(prev.Text() + s.Text())
 					p.RemoveChild(s)
 				}
@@ -189,7 +193,11 @@ func prepareXMLForTemplate(rawXML string) (string, error) {
 		content := ""
 		for _, e := range a.ChildElements() {
 			if e.Tag == "p" {
-				content = e.SelectElement("span").Text()
+				span := e.SelectElement("span")
+				if span == nil {
+					continue
+				}
+				content = span.Text()
 			}
 		}
 		if strings.Contains(content, "range") || strings.Contains(content, "end") {
@@ -206,7 +214,12 @@ func prepareXMLForTemplate(rawXML string) (string, error) {
 			if strings.Contains(content, "range") {
 				table.InsertChild(tr, textNode)
 			} else {
-				table.AddChild(textNode)
+				next := nextSimbling(tr)
+				if next == tr {
+					table.AddChild(textNode)
+				} else {
+					table.InsertChild(nextSimbling(tr), textNode)
+				}
 			}
 		}
 		a.Parent().RemoveChild(a)
@@ -217,8 +230,54 @@ func prepareXMLForTemplate(rawXML string) (string, error) {
 	if err != nil {
 		return rawXML, err
 	}
-
-	// Quick and dirty fix to allow us to use '""' and '&' inside template directives
-	cleanXML = strings.Replace(cleanXML, "&quot;", "\"", -1)
 	return cleanXML, err
+}
+
+func formatXML(src string) string {
+	// Parse XML file using DOM
+	doc := etree.NewDocument()
+	err := doc.ReadFromString(src)
+	if err != nil {
+		return src
+	}
+	doc.Indent(2)
+	xml, err := doc.WriteToString()
+	if err != nil {
+		return src
+	}
+	// Quick and dirty fix to allow us to use '""' inside template directives
+	return strings.Replace(xml, "&quot;", "\"", -1)
+}
+
+func nextSimbling(e *etree.Element) *etree.Element {
+	if e == nil {
+		return e
+	}
+	printf("> Lookup for next simbling for <%s:%s>", e.Space, e.Tag)
+	parent := e.Parent()
+	if parent == nil {
+		// No parent, next simbling is itself
+		return e
+	}
+	printf("> Found parent <%s:%s>", parent.Space, parent.Tag)
+	children := parent.ChildElements()
+	if children == nil {
+		return e
+	}
+	pos := -1
+	for i := range children {
+		c := children[i]
+		if c == e {
+			pos = i
+			break
+		}
+	}
+	if pos == -1 {
+		panic(fmt.Sprintf("odf: cannot find next simbling of %v", e))
+	}
+	if pos >= len(children)-1 {
+		// last element
+		return e
+	}
+	return children[pos+1]
 }
